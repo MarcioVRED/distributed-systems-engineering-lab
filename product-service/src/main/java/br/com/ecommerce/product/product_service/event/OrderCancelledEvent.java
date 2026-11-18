@@ -1,0 +1,6 @@
+package br.com.ecommerce.product.product_service.event;
+
+public record OrderCancelledEvent(
+        Long orderId
+) {
+}

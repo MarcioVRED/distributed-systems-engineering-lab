@@ -1,0 +1,638 @@
+{
+  "info": {
+    "name": "Ecommerce Microservices - Spring Boot Kafka",
+    "description": "Coleção de testes para product-service (8081), customer-service (8082) e order-service (8083). Importar no Postman. Execute primeiro os testes de criação e depois as consultas. Para o fluxo Kafka, use os itens na ordem, aguarde a publicação assíncrona e mantenha brokers e microsserviços ligados. Endpoints de cliente e PUT de produto podem exigir adaptação ao código real. H2 em memória perde dados ao reiniciar. Não execute cancelamento/exclusão no fluxo de reserva. Inclui Payment Service (GET /payments, GET /payments/order/{orderId}, GET /actuator/health).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 Product Service",
+      "item": [
+        {
+          "name": "01 Criar produto de teste",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{productUrl}}/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Notebook Teste Kafka\",\n  \"price\": 3500.0,\n  \"stock\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Produto criado\", () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const p=pm.response.json();",
+                  "pm.test(\"Produto tem ID\", () => pm.expect(p.id).to.exist);",
+                  "if(p.id) pm.collectionVariables.set(\"productId\",String(p.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Consultar produto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{productUrl}}/products/{{productId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Consulta 200\", () => pm.response.to.have.status(200));",
+                  "const p=pm.response.json();",
+                  "pm.test(\"ID correto\", () => pm.expect(String(p.id)).to.eql(pm.collectionVariables.get(\"productId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Listar produtos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{productUrl}}/products"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Listagem 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Atualizar produto (opcional)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{productUrl}}/products/{{productId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Notebook Teste Kafka Atualizado\",\n  \"price\": 3600.0,\n  \"stock\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Execute apenas se seu ProductController implementar PUT /products/{id}; o payload pode precisar ser ajustado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Atualização aceita\", () => pm.expect([200,204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Excluir produto (executar por último)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{productUrl}}/products/{{productId}}",
+            "description": "Não execute antes dos testes de estoque; a exclusão pode ser impedida por regras de negócio."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Exclusão aceita\", () => pm.expect([200,204]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "02 Customer Service",
+      "item": [
+        {
+          "name": "01 Criar cliente (ajustar campos se necessário)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{customerUrl}}/customers",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cliente Teste Postman\",\n  \"email\": \"cliente.postman@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "O formato exato da entidade Customer não foi confirmado nesta conversa. Ajuste campos obrigatórios do seu controller antes de executar."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Cliente criado\", () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const c=pm.response.json();",
+                  "if(c.id) pm.collectionVariables.set(\"customerId\",String(c.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Consultar cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{customerUrl}}/customers/{{customerId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Consulta 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Listar clientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{customerUrl}}/customers"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Listagem 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 Order Service",
+      "item": [
+        {
+          "name": "01 Criar pedido (publica order.created)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orderUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": {{customerId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2,\n      \"unitPrice\": 3500.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Após HTTP 201, confirme a publicação no Kafka UI. O HTTP 201 sozinho não garante a entrega ao Kafka."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pedido criado 201\", () => pm.response.to.have.status(201));",
+                  "const o=pm.response.json();",
+                  "pm.test(\"Pedido tem ID\", () => pm.expect(o.id).to.exist);",
+                  "if(o.id) pm.collectionVariables.set(\"orderId\",String(o.id));",
+                  "pm.test(\"Total correto\", () => pm.expect(Number(o.totalAmount)).to.eql(7000));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Consultar pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{orderUrl}}/orders/{{orderId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pedido encontrado\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Listar pedidos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{orderUrl}}/orders"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Listagem 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Pedidos por cliente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{orderUrl}}/orders/customer/{{customerId}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Consulta 200\", () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Cancelar pedido PENDING (pedido isolado)",
+          "request": {
+            "method": "PATCH",
+            "header": [],
+            "url": "{{orderUrl}}/orders/{{orderId}}/cancel",
+            "description": "Use apenas em pedido de teste específico. Atualmente o cancelamento só é permitido em PENDING; ainda não há compensação automática da reserva de estoque."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Cancelamento aceito ou conflito de estado\", () => pm.expect([200,204,409]).to.include(pm.response.code));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "04 Integração Kafka - Reserva de estoque (executar em ordem)",
+      "item": [
+        {
+          "name": "01 Criar produto com estoque 10",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{productUrl}}/products",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Produto Fluxo Reserva\",\n  \"price\": 3500.0,\n  \"stock\": 10\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Produto criado\", () => pm.expect([200,201]).to.include(pm.response.code));",
+                  "const p=pm.response.json();",
+                  "if(p.id) pm.collectionVariables.set(\"productId\",String(p.id));",
+                  "pm.test(\"Estoque inicial 10\", () => pm.expect(Number(p.stock)).to.eql(10));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Criar pedido com 2 unidades",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orderUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": {{customerId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2,\n      \"unitPrice\": 3500.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pedido criado\", () => pm.response.to.have.status(201));",
+                  "const o=pm.response.json();",
+                  "if(o.id) pm.collectionVariables.set(\"orderId\",String(o.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Conferir estoque 8 (após processamento Kafka)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{productUrl}}/products/{{productId}}",
+            "description": "Kafka é assíncrono: aguarde alguns segundos após o passo 02 antes de executar este teste. Não use Run Collection sem intervalo adequado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Produto consultado\", () => pm.response.to.have.status(200));",
+                  "const p=pm.response.json();",
+                  "pm.test(\"Estoque foi reservado (10 - 2 = 8)\", () => pm.expect(Number(p.stock)).to.eql(8));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "04 Pedido sem estoque suficiente (20 unidades)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{orderUrl}}/orders",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerId\": {{customerId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 20,\n      \"unitPrice\": 3500.0\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "description": "Nesta fase, o Order Service ainda aceita o pedido. A rejeição ocorre no Product Service; stock.rejected e atualização de status ainda não foram implementados."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pedido aceito pelo Order Service\", () => pm.response.to.have.status(201));",
+                  "const o=pm.response.json();",
+                  "if(o.id) pm.collectionVariables.set(\"rejectedOrderId\",String(o.id));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "05 Conferir estoque permanece 8",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{productUrl}}/products/{{productId}}",
+            "description": "Execute após aguardar o consumidor Kafka processar o evento do passo 04."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Produto consultado\", () => pm.response.to.have.status(200));",
+                  "const p=pm.response.json();",
+                  "pm.test(\"Estoque não ficou negativo\", () => pm.expect(Number(p.stock)).to.eql(8));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 Payment Service - Consultas (8084)",
+      "description": "Endpoints GET existentes no payment-service. O pagamento será criado via Kafka payment.requested após a integração. Para consultar um pagamento, execute antes um fluxo com pagamento processado.",
+      "item": [
+        {
+          "name": "01 Listar pagamentos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{paymentUrl}}/payments",
+              "host": [
+                "{{paymentUrl}}"
+              ],
+              "path": [
+                "payments"
+              ]
+            },
+            "description": "Lista todos os pagamentos. Antes da integração Kafka, o esperado é []."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Resposta é uma lista\", function () { pm.expect(pm.response.json()).to.be.an(\"array\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "02 Consultar pagamento por pedido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{paymentUrl}}/payments/order/{{orderId}}",
+              "host": [
+                "{{paymentUrl}}"
+              ],
+              "path": [
+                "payments",
+                "order",
+                "{{orderId}}"
+              ]
+            },
+            "description": "Antes de integrar o consumidor payment.requested, é normal receber HTTP 404. Depois do processamento, espera-se HTTP 200."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200 (pagamento existente) ou 404 (ainda não processado)\", function () { pm.expect([200,404]).to.include(pm.response.code); });",
+                  "if (pm.response.code === 200) {",
+                  "    const payment = pm.response.json();",
+                  "    pm.test(\"Pagamento pertence ao pedido informado\", function () { pm.expect(String(payment.orderId)).to.eql(pm.collectionVariables.get(\"orderId\")); });",
+                  "    pm.test(\"Status válido\", function () { pm.expect([\"PENDING\", \"APPROVED\", \"REJECTED\"]).to.include(payment.status); });",
+                  "    if (payment.id != null) pm.collectionVariables.set(\"paymentId\", String(payment.id));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "03 Health check - Payment Service",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{paymentUrl}}/actuator/health",
+              "host": [
+                "{{paymentUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Exige a dependência Spring Boot Actuator, já incluída na configuração do payment-service."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", function () { pm.response.to.have.status(200); });",
+                  "pm.test(\"Serviço saudável\", function () { pm.expect(pm.response.json().status).to.eql(\"UP\"); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "productUrl",
+      "value": "http://localhost:8081"
+    },
+    {
+      "key": "customerUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "orderUrl",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "productId",
+      "value": "1"
+    },
+    {
+      "key": "customerId",
+      "value": "1"
+    },
+    {
+      "key": "orderId",
+      "value": "1"
+    },
+    {
+      "key": "rejectedOrderId",
+      "value": ""
+    },
+    {
+      "key": "paymentUrl",
+      "value": "http://localhost:8084"
+    },
+    {
+      "key": "paymentId",
+      "value": ""
+    }
+  ]
+}

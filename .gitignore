@@ -1,0 +1,115 @@
+
+# ==========================================
+# Java / Spring Boot / Maven
+# ==========================================
+**/target/
+**/build/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+hs_err_pid*
+replay_pid*
+
+# Maven Wrapper - manter versionado
+!.mvn/wrapper/maven-wrapper.jar
+
+# ==========================================
+# IntelliJ IDEA
+# ==========================================
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# ==========================================
+# Eclipse / Spring Tool Suite (STS)
+# ==========================================
+.classpath
+.project
+.settings/
+.springBeans
+.sts4-cache/
+.factorypath
+.metadata/
+
+# ==========================================
+# VS Code
+# ==========================================
+.vscode/
+
+# ==========================================
+# Sistema operacional
+# ==========================================
+.DS_Store
+Thumbs.db
+*~
+*.swp
+*.swo
+
+# ==========================================
+# Variáveis de ambiente e credenciais
+# ==========================================
+.env
+.env.*
+!.env.example
+!.env.sample
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+secrets/
+**/application-local.yml
+**/application-local.yaml
+**/application-local.properties
+
+# ==========================================
+# Logs e arquivos temporários
+# ==========================================
+logs/
+**/logs/
+*.tmp
+*.temp
+*.pid
+tmp/
+temp/
+
+# ==========================================
+# Testes / Cobertura
+# ==========================================
+**/target/site/jacoco/
+**/coverage/
+*.exec
+
+# ==========================================
+# Docker / Dados locais
+# ==========================================
+**/docker-data/
+**/docker-volumes/
+**/mysql-data/
+**/postgres-data/
+**/kafka-data/
+**/zookeeper-data/
+**/grafana-data/
+**/prometheus-data/
+
+# ==========================================
+# Bancos locais e backups
+# ==========================================
+*.db
+*.sqlite
+*.sqlite3
+*.bak
+*.dump
+*.sql.gz
+
+# ==========================================
+# Arquivos gerados
+# ==========================================
+*.zip
+*.tar
+*.tar.gz
+*.7z

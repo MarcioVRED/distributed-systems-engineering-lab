@@ -1,0 +1,58 @@
+spring:
+  application:
+    name: customer-service
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ecommerce_customer?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:customer_user}
+    password: ${DB_PASSWORD:customer_local_pass}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+
+server:
+  port: 8082
+
+logging:
+  level:
+    root: INFO
+    br.com.ecommerce.customer.customer_service: INFO
+  file:
+    name: logs/customer-service.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 100MB
+
+# Observabilidade (ambiente local): scrape Prometheus e traces OTLP via HTTP
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    tags:
+      application: ${spring.application.name}

@@ -1,0 +1,79 @@
+spring:
+  application:
+    name: product-service
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ecommerce_product?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:product_user}
+    password: ${DB_PASSWORD:product_local_pass}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+
+  kafka:
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
+    bootstrap-servers: localhost:9092,localhost:9094,localhost:9096
+
+    consumer:
+      group-id: product-stock-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+server:
+  port: 8081
+
+logging:
+  file:
+    name: logs/product-service.log
+  level:
+    root: INFO
+    br.com.ecommerce.product.product_service: INFO
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 7
+      total-size-cap: 100MB
+
+# Retry/DLT: os tópicos .DLT devem ter ao menos as mesmas partições dos tópicos originais.
+
+# Observabilidade (ambiente local): scrape Prometheus e traces OTLP via HTTP
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    tags:
+      application: ${spring.application.name}

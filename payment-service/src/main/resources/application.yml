@@ -1,0 +1,79 @@
+server:
+  port: 8084
+
+# Política simulada de aprovação de pagamentos
+payment:
+  approval:
+    limit: ${PAYMENT_APPROVAL_LIMIT:10000.00}
+
+spring:
+  application:
+    name: payment-service
+
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ecommerce_payment?useSSL=false&allowPublicKeyRetrieval=true&connectionTimeZone=UTC}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: ${DB_USERNAME:payment_user}
+    password: ${DB_PASSWORD:payment_local_pass}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: false
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+
+
+  kafka:
+    listener:
+      observation-enabled: true
+    template:
+      observation-enabled: true
+    bootstrap-servers: localhost:9092,localhost:9094,localhost:9096
+
+    consumer:
+      group-id: payment-service-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+
+logging:
+  level:
+    root: INFO
+    br.com.ecommerce.payment.payment_service: INFO
+  file:
+    name: logs/payment-service.log
+  logback:
+    rollingpolicy:
+      max-file-size: 10MB
+      max-history: 14
+      total-size-cap: 200MB
+
+# Observabilidade (ambiente local): scrape Prometheus e traces OTLP via HTTP
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+  otlp:
+    tracing:
+      endpoint: ${OTEL_EXPORTER_OTLP_TRACES_ENDPOINT:http://localhost:4318/v1/traces}
+  metrics:
+    tags:
+      application: ${spring.application.name}
